@@ -85,6 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  let logoImpactPlayed = false;
+
   function playSynthSound(type) {
     if (!soundEnabled) return;
     try {
@@ -148,8 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
           break;
         }
         case 'logo-impact': {
-          playAudioFile('audio/MenuStart_1.mp3');
-          playAudioFile('audio/MenuStart_2.mp3');
+          playAudioFileWithAutoplayFallback('audio/MenuStart_2.mp3');
           break;
         }
       }
@@ -162,9 +163,43 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!soundEnabled) return;
     try {
       const audio = new Audio(filePath);
+      if (filePath.includes('Place_Piece.mp3')) {
+        try {
+          audio.currentTime = 0.4;
+        } catch (_) {}
+        audio.addEventListener('loadedmetadata', () => {
+          audio.currentTime = 0.4;
+        });
+      }
       audio.play().catch(err => console.warn(`Audio play failed for ${filePath}:`, err));
     } catch (e) {
       console.warn(`Audio load failed for ${filePath}:`, e);
+    }
+  }
+
+  function playAudioFileWithAutoplayFallback(filePath) {
+    if (!soundEnabled) return;
+    try {
+      const audio = new Audio(filePath);
+      audio.play().then(() => {
+        logoImpactPlayed = true;
+      }).catch(err => {
+        console.warn('Autoplay prevented startup sound, waiting for user interaction:', err);
+        const playOnInteraction = () => {
+          if (!logoImpactPlayed && soundEnabled) {
+            const audio2 = new Audio(filePath);
+            audio2.play().then(() => {
+              logoImpactPlayed = true;
+            }).catch(e => console.warn('Play on interaction failed:', e));
+          }
+          document.removeEventListener('click', playOnInteraction);
+          document.removeEventListener('keydown', playOnInteraction);
+        };
+        document.addEventListener('click', playOnInteraction);
+        document.addEventListener('keydown', playOnInteraction);
+      });
+    } catch (e) {
+      console.warn('Audio play with fallback failed:', e);
     }
   }
 
@@ -310,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start Button Click
   startGameBtn.addEventListener('click', () => {
     initAudio();
-    playSynthSound('place');
+    playSynthSound('click');
     triggerHaptic('tap');
     
     // Hide menu, show game board
@@ -323,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Continue Button Click
   continueGameBtn.addEventListener('click', () => {
     initAudio();
-    playSynthSound('place');
+    playSynthSound('click');
     triggerHaptic('tap');
     
     // Hide menu, show active game board
@@ -528,11 +563,10 @@ document.addEventListener('DOMContentLoaded', () => {
     cellEl.classList.add(currentPlayer.toLowerCase());
     cellEl.setAttribute('aria-label', `Board ${boardIndex + 1}, Cell ${cellIndex + 1} - Played ${currentPlayer}`);
 
-    playSynthSound('place');
-    triggerHaptic('tap');
-
     // Check if this move wins the mini-board
-    if (check3x3Win(board[boardIndex], currentPlayer)) {
+    const winsMiniBoard = check3x3Win(board[boardIndex], currentPlayer);
+
+    if (winsMiniBoard) {
       miniBoardsWon[boardIndex] = currentPlayer;
       
       // Update visual overlay for mini board
@@ -564,8 +598,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const miniBoardEl = document.getElementById(`board-${boardIndex}`);
       miniBoardEl.classList.add('won-tie');
       triggerVisualImpact('mild');
+      playSynthSound('place');
+      triggerHaptic('tap');
     } else {
       triggerVisualImpact('mild');
+      playSynthSound('place');
+      triggerHaptic('tap');
     }
 
     // Check if the entire board is in a tie state
@@ -769,6 +807,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Populate Game Over screen
     gameOverModal.className = 'modal-overlay active';
     gameOverModal.classList.remove('winner-x', 'winner-o', 'winner-tie');
+    
+    // Hide bouncing winner display symbol in PvNPC mode
+    if (gameMode === 'PvNPC') {
+      winnerDisplaySymbol.style.display = 'none';
+    } else {
+      winnerDisplaySymbol.style.display = 'flex';
+    }
     
     if (gameWinner === 'tie') {
       gameOverModal.classList.add('winner-tie');
