@@ -1800,17 +1800,26 @@ button:focus-visible {
 /* Resize board on mobile screens */
 @media (max-width: 480px) {
   .app-container {
-    padding: 0.6rem;
+    padding: 1rem 1.2rem;
   }
   
+  .game-logo {
+    max-width: 250px;
+  }
+
+  .logo-splatter {
+    width: 120%;
+    height: 120%;
+  }
+
   .game-subtitle {
-    font-size: 1.2rem;
-    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+    margin-bottom: 1.2rem;
   }
   
   .menu-card {
     padding: 0;
-    gap: 1.4rem;
+    gap: 1.2rem;
   }
   
   .mode-btn {

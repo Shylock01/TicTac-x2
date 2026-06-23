@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- GAME STATE ---
   let backgroundAngle = Math.random() * Math.PI * 2;
   let gameMode = 'PvP'; // 'PvP' or 'PvNPC'
-  let npcDifficulty = 'expert'; // 'easy', 'expert', 'impossible'
+  let npcDifficulty = 'easy'; // 'easy', 'expert', 'impossible'
   let currentPlayer = 'X'; // 'X' or 'O'
   let activeBoardIndex = -1; // -1 represents a wildcard (play anywhere)
   let gameActive = false;
@@ -1177,10 +1177,18 @@ document.addEventListener('DOMContentLoaded', () => {
     moveHistory = state.moveHistory || [];
     currentPlayer = state.currentPlayer || 'X';
     activeBoardIndex = state.activeBoardIndex !== undefined ? state.activeBoardIndex : -1;
-    gameActive = state.gameActive !== undefined ? state.gameActive : false;
-    winner = state.winner || null;
-    gameMode = state.gameMode || 'PvP';
-    npcDifficulty = state.npcDifficulty || 'expert';
+    const hasOngoingGame = (state.gameActive !== undefined ? state.gameActive : false) && (state.moveHistory && state.moveHistory.length > 0);
+    if (hasOngoingGame) {
+      gameActive = true;
+      winner = state.winner || null;
+      gameMode = state.gameMode || 'PvP';
+      npcDifficulty = state.npcDifficulty || 'easy';
+    } else {
+      gameActive = false;
+      winner = null;
+      gameMode = 'PvP';
+      npcDifficulty = 'easy';
+    }
 
     // Refresh cells
     cells.forEach(cell => {
