@@ -5,6 +5,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   // --- GAME STATE ---
+  let backgroundAngle = Math.random() * Math.PI * 2;
   let gameMode = 'PvP'; // 'PvP' or 'PvNPC'
   let npcDifficulty = 'expert'; // 'easy', 'expert', 'impossible'
   let currentPlayer = 'X'; // 'X' or 'O'
@@ -218,6 +219,61 @@ document.addEventListener('DOMContentLoaded', () => {
           osc.stop(now + 0.4);
           break;
         }
+        case 'logo-impact': {
+          // Smash Bros style KO swing + impact sound
+          // 1. Swing/Swoosh (frequency sweep + triangle wave)
+          const osc1 = audioCtx.createOscillator();
+          const gain1 = audioCtx.createGain();
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(100, now);
+          osc1.frequency.exponentialRampToValueAtTime(1200, now + 0.18);
+          gain1.gain.setValueAtTime(0.01, now);
+          gain1.gain.linearRampToValueAtTime(0.2, now + 0.15);
+          gain1.gain.linearRampToValueAtTime(0.001, now + 0.2);
+          
+          osc1.connect(gain1);
+          gain1.connect(audioCtx.destination);
+          osc1.start(now);
+          osc1.stop(now + 0.2);
+
+          // 2. High-Impact Explosion (sawtooth wave at 0.15s)
+          const oscClash = audioCtx.createOscillator();
+          const gainClash = audioCtx.createGain();
+          oscClash.type = 'sawtooth';
+          oscClash.frequency.setValueAtTime(180, now + 0.15);
+          oscClash.frequency.linearRampToValueAtTime(40, now + 0.5);
+          
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(1000, now + 0.15);
+          filter.frequency.exponentialRampToValueAtTime(100, now + 0.5);
+          
+          gainClash.gain.setValueAtTime(0.001, now);
+          gainClash.gain.setValueAtTime(0.3, now + 0.15);
+          gainClash.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+          oscClash.connect(filter);
+          filter.connect(gainClash);
+          gainClash.connect(audioCtx.destination);
+          oscClash.start(now + 0.15);
+          oscClash.stop(now + 0.6);
+
+          // 3. High-pitch chime clash
+          const oscChime = audioCtx.createOscillator();
+          const gainChime = audioCtx.createGain();
+          oscChime.type = 'sine';
+          oscChime.frequency.setValueAtTime(2000, now + 0.15);
+          oscChime.frequency.exponentialRampToValueAtTime(1500, now + 0.4);
+          gainChime.gain.setValueAtTime(0.001, now);
+          gainChime.gain.setValueAtTime(0.1, now + 0.15);
+          gainChime.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+          
+          oscChime.connect(gainChime);
+          gainChime.connect(audioCtx.destination);
+          oscChime.start(now + 0.15);
+          oscChime.stop(now + 0.45);
+          break;
+        }
       }
     } catch (e) {
       console.warn('Audio play failed:', e);
@@ -243,14 +299,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- VISUAL IMPACT EFFECTS (FLASH & SCREEN SHAKE) ---
-  function triggerVisualImpact(intensity) {
+  function triggerVisualImpact(intensity, color) {
     const boardWrapper = document.querySelector('.board-wrapper');
     const flashOverlay = document.getElementById('flash-overlay');
     if (!boardWrapper || !flashOverlay) return;
 
-    // Reset impact classes
+    // Reset impact classes & style
     boardWrapper.classList.remove('screenshake-mild', 'screenshake-strong', 'screenshake-victory');
     flashOverlay.classList.remove('flash-fast', 'flash-red', 'flash-victory');
+    flashOverlay.style.backgroundColor = '';
 
     // Force reflow to restart animations
     void boardWrapper.offsetWidth;
@@ -258,13 +315,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (intensity === 'mild') {
       boardWrapper.classList.add('screenshake-mild');
-      flashOverlay.classList.add('flash-fast');
+      // Mild screen-shake only, no screen flash!
     } else if (intensity === 'strong') {
       boardWrapper.classList.add('screenshake-strong');
+      if (color) {
+        flashOverlay.style.backgroundColor = color;
+      }
       flashOverlay.classList.add('flash-red');
     } else if (intensity === 'victory') {
       boardWrapper.classList.add('screenshake-victory');
       flashOverlay.classList.add('flash-victory');
+    }
+  }
+
+  // --- LOGO IMPACT WITH SMASH KO FANFARE ---
+  function triggerLogoImpact() {
+    const logoContainer = document.querySelector('.logo-container');
+    if (!logoContainer) return;
+
+    logoContainer.classList.remove('impact-active');
+    void logoContainer.offsetWidth; // Force reflow
+    logoContainer.classList.add('impact-active');
+
+    // Trigger random direction angle for background
+    if (typeof randomizeBackgroundAngle === 'function') {
+      randomizeBackgroundAngle();
+    }
+
+    // Play swing sound
+    playSynthSound('logo-impact');
+
+    // Visual flash
+    const flashOverlay = document.getElementById('flash-overlay');
+    if (flashOverlay) {
+      flashOverlay.classList.remove('flash-fast', 'flash-red', 'flash-victory');
+      flashOverlay.style.backgroundColor = '#ffffff';
+      void flashOverlay.offsetWidth;
+      flashOverlay.classList.add('flash-fast');
     }
   }
 
@@ -355,6 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
     gameView.classList.remove('active');
     mainMenuView.classList.add('active');
     updateMainMenuButtons();
+    triggerLogoImpact();
   });
 
   // Sound/Haptic toggles
@@ -412,11 +500,15 @@ document.addEventListener('DOMContentLoaded', () => {
     gameView.classList.remove('active');
     mainMenuView.classList.add('active');
     updateMainMenuButtons();
+    triggerLogoImpact();
   });
 
 
   // --- GAME INITIALIZATION ---
   function startGame() {
+    if (typeof randomizeBackgroundAngle === 'function') {
+      randomizeBackgroundAngle();
+    }
     board = Array(9).fill(null).map(() => Array(9).fill(''));
     miniBoardsWon = Array(9).fill('');
     moveHistory = [];
@@ -525,7 +617,16 @@ document.addEventListener('DOMContentLoaded', () => {
         endGame(currentPlayer);
         return;
       }
-      triggerVisualImpact('strong');
+      
+      // Compute specific color flash on winning a main board spot
+      let flashColor = '#ffffff';
+      if (gameMode === 'PvP') {
+        flashColor = (currentPlayer === 'X') ? '#FEFE00' : '#4700FE';
+      } else {
+        // PvNPC mode: Player is X (Green), NPC is O (Red)
+        flashColor = (currentPlayer === 'X') ? '#00F756' : '#FE004D';
+      }
+      triggerVisualImpact('strong', flashColor);
     } 
     // Check if the mini-board tied
     else if (isMiniBoardFull(board[boardIndex])) {
@@ -1110,4 +1211,129 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.parent && window.parent !== window) {
     window.parent.postMessage({ type: 'PANOPTICON_READY' }, '*');
   }
+
+  // --- DYNAMIC BACKGROUND PARTICLE SYSTEM ---
+  const canvas = document.getElementById('bg-canvas');
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    const maxParticles = 65; // Overcrowded look
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Global background angle randomizer (hooked up to main module)
+    window.randomizeBackgroundAngle = function() {
+      backgroundAngle = Math.random() * Math.PI * 2;
+    };
+
+    // Particle factory
+    function createParticle(initOpacity = 0.5) {
+      return {
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: 15 + Math.random() * 85,
+        type: Math.random() < 0.5 ? 'X' : 'O',
+        opacity: initOpacity,
+        fadeDelay: 60 + Math.random() * 120, // Frames to stay visible before fading
+        fadeSpeed: 0.003 + Math.random() * 0.007,
+        shakeAmount: 12 + Math.random() * 15, // Birth shake offset
+        shakeDecay: 0.88,
+        rotation: Math.random() * Math.PI * 2,
+        driftSpeed: 0.15 + Math.random() * 0.25
+      };
+    }
+
+    // Populate initial particles
+    for (let i = 0; i < maxParticles; i++) {
+      particles.push(createParticle(Math.random() * 0.45));
+    }
+
+    function animateBackground() {
+      // Draw dynamic vertical background gradient
+      const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      grad.addColorStop(0, '#0f1015');
+      grad.addColorStop(1, '#14151e');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Spawn new particles if we have space
+      if (particles.length < maxParticles && Math.random() < 0.12) {
+        particles.push(createParticle(0.5));
+      }
+
+      // Draw and update particles
+      particles.forEach((p) => {
+        // Drift according to current backgroundAngle
+        p.x += Math.cos(backgroundAngle) * p.driftSpeed;
+        p.y += Math.sin(backgroundAngle) * p.driftSpeed;
+
+        // Apply birth shake decay
+        let sx = 0, sy = 0;
+        if (p.shakeAmount > 0.1) {
+          const shakeAngle = Math.random() * Math.PI * 2;
+          sx = Math.cos(shakeAngle) * p.shakeAmount;
+          sy = Math.sin(shakeAngle) * p.shakeAmount;
+          p.shakeAmount *= p.shakeDecay;
+        }
+
+        // Wrap particles around borders if they drift off screen
+        if (p.x < -p.size * 2) p.x = canvas.width + p.size * 2;
+        if (p.x > canvas.width + p.size * 2) p.x = -p.size * 2;
+        if (p.y < -p.size * 2) p.y = canvas.height + p.size * 2;
+        if (p.y > canvas.height + p.size * 2) p.y = -p.size * 2;
+
+        // Opacity fade logic
+        if (p.fadeDelay > 0) {
+          p.fadeDelay--;
+        } else {
+          p.opacity -= p.fadeSpeed;
+        }
+
+        // Draw particle if visible
+        if (p.opacity > 0.001) {
+          ctx.save();
+          ctx.translate(p.x + sx, p.y + sy);
+          ctx.lineWidth = p.size * 0.12;
+          ctx.lineCap = 'square';
+          ctx.lineJoin = 'miter';
+
+          if (p.type === 'X') {
+            // Draw White X at 50% max opacity
+            ctx.rotate(p.rotation);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${p.opacity})`;
+            ctx.beginPath();
+            const offset = p.size / 2;
+            ctx.moveTo(-offset, -offset);
+            ctx.lineTo(offset, offset);
+            ctx.moveTo(offset, -offset);
+            ctx.lineTo(-offset, offset);
+            ctx.stroke();
+          } else {
+            // Draw Gray O (#7a7d93 / rgb(122, 125, 147)) at 50% max opacity
+            ctx.strokeStyle = `rgba(122, 125, 147, ${p.opacity})`;
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      });
+
+      // Remove completely faded out particles
+      particles = particles.filter(p => p.opacity > 0.001);
+
+      requestAnimationFrame(animateBackground);
+    }
+    
+    // Start loop
+    animateBackground();
+  }
+
+  // Trigger initial logo impact and background drift angle
+  setTimeout(triggerLogoImpact, 100);
 });

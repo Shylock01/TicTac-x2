@@ -24,14 +24,6 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--bg-color);
-  background-image: 
-    linear-gradient(135deg, rgba(254, 0, 77, 0.03) 25%, transparent 25%), 
-    linear-gradient(225deg, rgba(254, 0, 77, 0.03) 25%, transparent 25%), 
-    linear-gradient(45deg, rgba(254, 0, 77, 0.03) 25%, transparent 25%), 
-    linear-gradient(315deg, rgba(254, 0, 77, 0.03) 25%, var(--bg-color) 25%);
-  background-position: 40px 0, 40px 0, 0 0, 0 0;
-  background-size: 80px 80px;
-  background-repeat: repeat;
   color: var(--text-primary);
   font-family: var(--font-body);
   display: flex;
@@ -42,7 +34,18 @@ body {
   position: relative;
 }
 
-/* Background visual decorations (gritty skewed bars instead of glows) */
+/* Background Canvas positioning */
+#bg-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Background visual decorations (subtle background bands) */
 .bg-glow {
   position: absolute;
   pointer-events: none;
@@ -56,7 +59,7 @@ body {
   height: 150px;
   background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
   transform: rotate(-12deg);
-  opacity: 0.08;
+  opacity: 0.04;
 }
 
 .bg-glow-2 {
@@ -66,7 +69,7 @@ body {
   height: 100px;
   background: linear-gradient(90deg, transparent, var(--player-o-color), transparent);
   transform: rotate(-12deg);
-  opacity: 0.06;
+  opacity: 0.03;
 }
 
 .app-container {
@@ -135,20 +138,53 @@ button:focus-visible {
 }
 
 .logo-container {
-  margin-bottom: 0.5rem;
+  position: relative;
+  margin-bottom: 0.8rem;
+  display: inline-block;
+}
+
+.logo-splatter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 160%;
+  height: 160%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: normal;
+  transition: transform 0.3s var(--ease-elastic), opacity 0.3s ease;
 }
 
 .game-logo {
+  position: relative;
+  z-index: 2;
   width: 100%;
   max-width: 320px;
   height: auto;
   filter: drop-shadow(5px 5px 0px rgba(0, 0, 0, 0.8));
-  animation: logo-impact 0.5s var(--ease-snap) forwards;
+  transform: scale(1);
 }
 
-@keyframes logo-impact {
-  0% { transform: scale(1.4) rotate(-5deg); opacity: 0; }
+/* Trigger animations on menu entry */
+.logo-container.impact-active .game-logo {
+  animation: logo-slam-anim 0.35s var(--ease-snap) forwards;
+}
+
+.logo-container.impact-active .logo-splatter {
+  animation: logo-splatter-anim 0.35s var(--ease-elastic) 0.15s forwards;
+}
+
+@keyframes logo-slam-anim {
+  0% { transform: scale(4) rotate(-15deg); opacity: 0; filter: blur(5px); }
+  60% { transform: scale(0.85) rotate(5deg); opacity: 0.9; filter: blur(0px); }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes logo-splatter-anim {
+  0% { transform: translate(-50%, -50%) scale(0) rotate(-45deg); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1.15) rotate(0deg); opacity: 0.85; }
 }
 
 .game-subtitle {
@@ -222,10 +258,11 @@ button:focus-visible {
   background: transparent;
   color: #ffffff;
   padding: 0.8rem;
-  box-shadow: 4px 4px 0px rgba(255, 255, 255, 0.15);
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: all 0.15s var(--ease-snap);
 }
 
 .mode-btn span {
@@ -235,20 +272,20 @@ button:focus-visible {
 
 .mode-btn:hover {
   background: rgba(255, 255, 255, 0.05);
-  transform: skewX(-8deg) translate(-2px, -2px);
-  box-shadow: 6px 6px 0px var(--accent-color);
+  transform: skewX(-8deg) translate(-3px, -3px);
+  box-shadow: 7px 7px 0px var(--accent-color);
 }
 
 .mode-btn.active {
   background: var(--player-x-color);
   color: #0f1015;
   border-color: #ffffff;
-  box-shadow: 6px 6px 0px var(--accent-color);
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5);
 }
 
 .mode-btn.active:hover {
-  transform: skewX(-8deg) translate(-2px, -2px);
-  box-shadow: 8px 8px 0px var(--accent-color);
+  transform: skewX(-8deg) translate(-3px, -3px);
+  box-shadow: 7px 7px 0px var(--accent-color);
 }
 
 /* Difficulty Options */
@@ -277,6 +314,7 @@ button:focus-visible {
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: all 0.15s var(--ease-snap);
 }
 
 .diff-btn span {
@@ -284,15 +322,24 @@ button:focus-visible {
 }
 
 .diff-btn:hover {
+  border-style: dashed;
   border-color: #ffffff;
   color: #ffffff;
   background: rgba(255, 255, 255, 0.05);
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0px var(--accent-color);
 }
 
 .diff-btn.active {
   border-style: solid;
   border-color: #ffffff;
   color: #0f1015;
+  box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.5);
+}
+
+.diff-btn.active:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 6px 6px 0px var(--accent-color);
 }
 
 .diff-btn.active[data-difficulty="easy"] {
@@ -329,6 +376,7 @@ button:focus-visible {
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: all 0.15s var(--ease-snap);
 }
 
 .primary-btn span {
@@ -363,6 +411,7 @@ button:focus-visible {
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: all 0.15s var(--ease-snap);
 }
 
 .secondary-btn span {
@@ -437,6 +486,7 @@ button:focus-visible {
   align-items: center;
   color: #ffffff;
   box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5);
+  transition: all 0.15s var(--ease-snap);
 }
 
 .icon-btn svg {
@@ -446,8 +496,8 @@ button:focus-visible {
 .icon-btn:hover {
   color: var(--accent-color);
   border-color: #ffffff;
-  transform: skewX(-8deg) translate(-2px, -2px);
-  box-shadow: 6px 6px 0px var(--accent-color);
+  transform: skewX(-8deg) translate(-3px, -3px);
+  box-shadow: 7px 7px 0px var(--accent-color);
 }
 
 .icon-btn:active {
@@ -666,17 +716,22 @@ button:focus-visible {
   transition: all 0.15s ease;
 }
 
-/* Active board highlight: blinking border and flash background */
+/* Active board highlight: pulsing jitter target highlight */
 .mini-board.active-play {
-  background: rgba(254, 0, 77, 0.05);
+  background: rgba(254, 0, 77, 0.04);
   border: 3px solid var(--accent-color);
   box-shadow: 0 0 10px var(--accent-glow);
-  animation: active-border-flash 1s infinite alternate steps(2);
+  animation: jitter-pulse 1.2s infinite ease-in-out;
 }
 
-@keyframes active-border-flash {
-  0% { border-color: var(--accent-color); }
-  100% { border-color: #ffffff; }
+@keyframes jitter-pulse {
+  0%, 100% { border-color: var(--accent-color); box-shadow: 0 0 6px var(--accent-glow); transform: scale(1); }
+  15% { border-color: #ffffff; box-shadow: 0 0 10px rgba(255,255,255,0.4); transform: scale(1.008) translate(0.5px, -0.5px); }
+  30% { border-color: var(--accent-color); box-shadow: 0 0 4px var(--accent-glow); transform: scale(0.992) translate(-0.5px, 0.5px); }
+  45% { border-color: var(--accent-color); box-shadow: 0 0 8px var(--accent-glow); transform: scale(1) translate(0.5px, 0.5px); }
+  60% { border-color: #ffffff; box-shadow: 0 0 12px rgba(255,255,255,0.5); transform: scale(1.012) translate(-0.5px, -0.5px); }
+  75% { border-color: var(--accent-color); box-shadow: 0 0 5px var(--accent-glow); transform: scale(0.996) translate(0px, 0px); }
+  90% { border-color: var(--accent-color); box-shadow: 0 0 9px var(--accent-glow); transform: scale(1.004) translate(0.5px, 0.5px); }
 }
 
 /* Dim other boards when there is an active target */
@@ -797,7 +852,7 @@ button:focus-visible {
 }
 
 /* ==========================================================================
-   MINI-BOARD WIN OVERLAYS & SWORD SLASH
+   MINI-BOARD WIN OVERLAYS, SLAMMING EMBLUMS & SWORD SLASH
    ========================================================================== */
 
 .board-win-overlay {
@@ -811,9 +866,8 @@ button:focus-visible {
   align-items: center;
   pointer-events: none;
   opacity: 0;
-  transform: scale(1.6);
-  transition: all 0.2s var(--ease-snap);
   z-index: 5;
+  transition: opacity 0.15s ease;
 }
 
 /* Slam down on win */
@@ -821,8 +875,31 @@ button:focus-visible {
 .mini-board.won-o .board-win-overlay,
 .mini-board.won-tie .board-win-overlay {
   opacity: 1;
-  transform: scale(1);
   pointer-events: auto;
+}
+
+/* Falling tile slam animation */
+.mini-board.won-x .win-symbol,
+.mini-board.won-o .win-symbol,
+.mini-board.won-tie .win-symbol {
+  animation: symbol-slam 0.35s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+}
+
+@keyframes symbol-slam {
+  0% {
+    transform: scale(3) rotate(-15deg);
+    opacity: 0;
+    filter: blur(8px);
+  }
+  70% {
+    transform: scale(0.85) rotate(5deg);
+    opacity: 0.9;
+    filter: blur(0px);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 
 /* X-board win styling */
@@ -932,6 +1009,7 @@ button:focus-visible {
   align-items: center;
   gap: 0.5rem;
   box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5);
+  transition: all 0.15s var(--ease-snap);
 }
 
 .control-btn span {
@@ -941,8 +1019,8 @@ button:focus-visible {
 
 .control-btn:hover:not(.disabled) {
   background: rgba(255, 255, 255, 0.05);
-  transform: skewX(-8deg) translate(-2px, -2px);
-  box-shadow: 6px 6px 0px var(--accent-color);
+  transform: skewX(-8deg) translate(-3px, -3px);
+  box-shadow: 7px 7px 0px var(--accent-color);
 }
 
 .control-btn:active:not(.disabled) {
@@ -1022,11 +1100,12 @@ button:focus-visible {
   font-size: 2.5rem;
   line-height: 1;
   color: var(--text-muted);
+  transition: all 0.15s var(--ease-snap);
 }
 
 .close-btn:hover {
   color: var(--accent-color);
-  transform: scale(1.1);
+  transform: scale(1.2) rotate(90deg);
 }
 
 .modal-body {
@@ -1223,12 +1302,12 @@ button:focus-visible {
 }
 
 @keyframes flash-fast-anim {
-  0% { opacity: 0.4; background-color: #ffffff; }
+  0% { opacity: 0.4; }
   100% { opacity: 0; }
 }
 
 @keyframes flash-red-anim {
-  0% { opacity: 0.6; background-color: var(--accent-color); }
+  0% { opacity: 0.6; }
   50% { opacity: 0.3; background-color: #ffffff; }
   100% { opacity: 0; }
 }
