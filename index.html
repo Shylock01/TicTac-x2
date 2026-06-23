@@ -12,7 +12,7 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800;900&family=Teko:wght@500;700;900&display=swap" rel="stylesheet">
   
   <!-- Custom CSS -->
   <link rel="stylesheet" href="styles.css">
@@ -21,6 +21,9 @@
   <script src="app.js" defer></script>
 </head>
 <body>
+  <!-- Full screen impact flash overlay -->
+  <div id="flash-overlay" class="flash-overlay"></div>
+  
   <div class="app-container">
     <!-- Background visual decorations -->
     <div class="bg-glow bg-glow-1"></div>
@@ -32,53 +35,47 @@
         <div class="logo-container">
           <img src="assets/TTx2_logo.png" alt="Tic Tac x2 Logo" class="game-logo">
         </div>
-        <p class="game-subtitle">The ultimate strategic tic-tac-toe experience.</p>
+        <p class="game-subtitle">TWICE THE GRID. TWICE THE BATTLE.</p>
         
         <div class="menu-card">
           <!-- Game Mode Selector -->
           <div class="control-group">
-            <label class="control-label">Select Game Mode</label>
+            <label class="control-label">MODE</label>
             <div class="mode-options">
               <button type="button" id="mode-pvp" class="mode-btn active" data-mode="PvP">
-                <span class="btn-icon">👥</span>
-                <span class="btn-text">Player vs Player</span>
+                <span class="btn-text">PVP</span>
               </button>
               <button type="button" id="mode-pve" class="mode-btn" data-mode="PvNPC">
-                <span class="btn-icon">🤖</span>
-                <span class="btn-text">Player vs NPC</span>
+                <span class="btn-text">VS NPC</span>
               </button>
             </div>
           </div>
           
-          <!-- Difficulty Selector (hidden by default, shown for PvNPC) -->
+          <!-- Difficulty Selector -->
           <div id="difficulty-selection" class="control-group hidden">
-            <label class="control-label">NPC Difficulty</label>
+            <label class="control-label">DIFFICULTY</label>
             <div class="difficulty-options">
               <button type="button" class="diff-btn" data-difficulty="easy">
-                <span class="diff-title">Easy</span>
-                <span class="diff-desc">50% blunder rate</span>
+                <span class="diff-title">EASY</span>
               </button>
               <button type="button" class="diff-btn active" data-difficulty="expert">
-                <span class="diff-title">Expert</span>
-                <span class="diff-desc">30% blunder rate</span>
+                <span class="diff-title">EXPERT</span>
               </button>
               <button type="button" class="diff-btn" data-difficulty="impossible">
-                <span class="diff-title">Impossible</span>
-                <span class="diff-desc">10% blunder rate</span>
+                <span class="diff-title">IMPOSSIBLE</span>
               </button>
             </div>
           </div>
           
           <div class="menu-actions">
             <button type="button" id="start-game-btn" class="primary-btn">
-              <span>Start Battle</span>
-              <span class="arrow">→</span>
+              <span>START BATTLE</span>
             </button>
             <button type="button" id="continue-game-btn" class="secondary-btn hidden">
-              <span>Continue Game</span>
+              <span>CONTINUE</span>
             </button>
             <button type="button" id="open-rules-btn" class="secondary-btn">
-              <span>How to Play</span>
+              <span>HOW TO PLAY</span>
             </button>
           </div>
         </div>

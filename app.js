@@ -242,6 +242,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // --- VISUAL IMPACT EFFECTS (FLASH & SCREEN SHAKE) ---
+  function triggerVisualImpact(intensity) {
+    const boardWrapper = document.querySelector('.board-wrapper');
+    const flashOverlay = document.getElementById('flash-overlay');
+    if (!boardWrapper || !flashOverlay) return;
+
+    // Reset impact classes
+    boardWrapper.classList.remove('screenshake-mild', 'screenshake-strong', 'screenshake-victory');
+    flashOverlay.classList.remove('flash-fast', 'flash-red', 'flash-victory');
+
+    // Force reflow to restart animations
+    void boardWrapper.offsetWidth;
+    void flashOverlay.offsetWidth;
+
+    if (intensity === 'mild') {
+      boardWrapper.classList.add('screenshake-mild');
+      flashOverlay.classList.add('flash-fast');
+    } else if (intensity === 'strong') {
+      boardWrapper.classList.add('screenshake-strong');
+      flashOverlay.classList.add('flash-red');
+    } else if (intensity === 'victory') {
+      boardWrapper.classList.add('screenshake-victory');
+      flashOverlay.classList.add('flash-victory');
+    }
+  }
+
   // --- MENU INTERACTION EVENT HANDLERS ---
   
   // Game Mode Toggle
@@ -499,12 +525,16 @@ document.addEventListener('DOMContentLoaded', () => {
         endGame(currentPlayer);
         return;
       }
+      triggerVisualImpact('strong');
     } 
     // Check if the mini-board tied
     else if (isMiniBoardFull(board[boardIndex])) {
       miniBoardsWon[boardIndex] = 'tie';
       const miniBoardEl = document.getElementById(`board-${boardIndex}`);
       miniBoardEl.classList.add('won-tie');
+      triggerVisualImpact('mild');
+    } else {
+      triggerVisualImpact('mild');
     }
 
     // Check if the entire board is in a tie state
@@ -639,25 +669,27 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (!gameActive) {
       if (winner === 'tie') {
-        statusText.innerHTML = "Game tied! Well fought.";
+        statusText.innerHTML = `<span class="status-badge tie-badge">DRAW GAME</span>`;
       } else {
-        statusText.innerHTML = `Match over! <strong>Player ${winner} wins!</strong>`;
-        statusText.classList.add(`highlight-${winner.toLowerCase()}`);
+        statusText.innerHTML = `<span class="status-badge winner-badge winner-${winner.toLowerCase()}">VICTORY: ${winner}</span>`;
       }
       return;
     }
 
-    // Active turns text
     const isNpcActive = (gameMode === 'PvNPC' && currentPlayer === 'O');
-    const playerString = isNpcActive ? 'NPC' : `Player ${currentPlayer}`;
-    const boardNames = ['Top-Left', 'Top-Center', 'Top-Right', 'Middle-Left', 'Center', 'Middle-Right', 'Bottom-Left', 'Bottom-Center', 'Bottom-Right'];
+    const playerString = isNpcActive ? 'NPC' : currentPlayer;
+    const boardNames = ['TOP-LEFT', 'TOP-CENTER', 'TOP-RIGHT', 'MIDDLE-LEFT', 'CENTER', 'MIDDLE-RIGHT', 'BOTTOM-LEFT', 'BOTTOM-CENTER', 'BOTTOM-RIGHT'];
 
     if (activeBoardIndex === -1) {
-      statusText.innerHTML = `<strong>${playerString}</strong> gets a <strong style="color: var(--canary-yellow);">Wildcard!</strong> Play on any active board.`;
-      statusText.classList.add('highlight-wildcard');
+      statusText.innerHTML = `
+        <span class="status-badge turn-badge turn-${currentPlayer.toLowerCase()}">TURN: ${playerString}</span>
+        <span class="status-badge target-badge wildcard-badge">TARGET: WILDCARD!</span>
+      `;
     } else {
-      statusText.innerHTML = `<strong>${playerString}</strong> must play in the <strong>${boardNames[activeBoardIndex]}</strong> board.`;
-      statusText.classList.add(`highlight-${currentPlayer.toLowerCase()}`);
+      statusText.innerHTML = `
+        <span class="status-badge turn-badge turn-${currentPlayer.toLowerCase()}">TURN: ${playerString}</span>
+        <span class="status-badge target-badge">TARGET: ${boardNames[activeBoardIndex]}</span>
+      `;
     }
   }
 
@@ -695,6 +727,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateUI();
     saveGameState();
+
+    // Trigger visual impact for game end
+    if (gameWinner === 'tie') {
+      triggerVisualImpact('strong');
+    } else {
+      triggerVisualImpact('victory');
+    }
 
     // Populate Game Over screen
     gameOverModal.className = 'modal-overlay active';
