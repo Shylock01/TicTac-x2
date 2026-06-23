@@ -1,7 +1,7 @@
 {
-  "name": "Tic Tac x2",
-  "short_name": "Tic Tac x2",
-  "description": "Ultimate Tic Tac Toe with smooth elastic animations, PvP/PvNPC modes, and cloud state synchronization.",
+  "name": "Tic Tac x2!",
+  "short_name": "Tic Tac x2!",
+  "description": "The simple game of tic tac toe with twice the fun!",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#171825",
