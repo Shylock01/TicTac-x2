@@ -78,6 +78,17 @@ body {
   opacity: 0.03;
 }
 
+/* Active gameplay background glow color override (#0018FE) */
+.app-container:has(#game-view.active) .bg-glow-1 {
+  background: linear-gradient(90deg, transparent, #0018FE, transparent);
+  opacity: 0.08;
+}
+
+.app-container:has(#game-view.active) .bg-glow-2 {
+  background: linear-gradient(90deg, transparent, #0018FE, transparent);
+  opacity: 0.06;
+}
+
 .app-container {
   position: relative;
   z-index: 1;
@@ -175,16 +186,76 @@ button:focus-visible {
 
 /* Trigger animations on menu entry */
 .logo-container.impact-active .game-logo {
-  animation: logo-slam-anim 0.35s var(--ease-snap) forwards;
+  animation: logo-slam-anim 0.45s var(--ease-snap) forwards;
 }
 
 .logo-container.impact-active .logo-splatter {
   animation: logo-splatter-anim 0.35s var(--ease-elastic) 0.15s forwards;
 }
 
+/* Lens flare styling & blast animation */
+.lens-flare {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, #ffffff 10%, rgba(254, 0, 77, 0.8) 40%, rgba(254, 254, 0, 0.4) 60%, transparent 80%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 3; /* Render on top of the logo image for flash impact */
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+
+.lens-flare::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scaleX(0);
+  width: 400px;
+  height: 8px;
+  background: linear-gradient(90deg, transparent, #ffffff 40%, #ffffff 60%, transparent);
+  mix-blend-mode: screen;
+}
+
+.lens-flare::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg) scaleX(0);
+  width: 250px;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  mix-blend-mode: screen;
+}
+
+.logo-container.impact-active .lens-flare {
+  animation: lens-flare-blast 0.5s ease-out 0.15s forwards;
+}
+
+.logo-container.impact-active .lens-flare::before {
+  animation: flare-horizontal 0.5s ease-out 0.15s forwards;
+}
+
+.logo-container.impact-active .lens-flare::after {
+  animation: flare-diagonal 0.5s ease-out 0.15s forwards;
+}
+
 @keyframes logo-slam-anim {
   0% { transform: scale(4) rotate(-15deg); opacity: 0; filter: blur(5px); }
-  60% { transform: scale(0.85) rotate(5deg); opacity: 0.9; filter: blur(0px); }
+  33% { transform: scale(0.85) rotate(5deg); opacity: 0.9; filter: blur(0px); }
+  /* Impact shake/jitter starts here at 150ms (33% of 450ms) */
+  40% { transform: scale(0.95) rotate(-2deg) translate(-3px, 2px); }
+  47% { transform: scale(0.9) rotate(3deg) translate(3px, -2px); }
+  54% { transform: scale(1.05) rotate(-1deg) translate(-2px, -1px); }
+  61% { transform: scale(0.95) rotate(2deg) translate(2px, 2px); }
+  68% { transform: scale(1.02) rotate(-2deg) translate(-1px, -2px); }
+  75% { transform: scale(0.98) rotate(1deg) translate(1px, 1px); }
+  85% { transform: scale(1.01) rotate(-0.5deg) translate(0px, 0px); }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
@@ -193,11 +264,29 @@ button:focus-visible {
   100% { transform: translate(-50%, -50%) scale(1.15) rotate(0deg); opacity: 0.85; }
 }
 
+@keyframes lens-flare-blast {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  15% { transform: translate(-50%, -50%) scale(2.2); opacity: 1; filter: brightness(1.8); }
+  100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; filter: brightness(1); }
+}
+
+@keyframes flare-horizontal {
+  0% { transform: translate(-50%, -50%) scaleX(0); }
+  15% { transform: translate(-50%, -50%) scaleX(2); }
+  100% { transform: translate(-50%, -50%) scaleX(3); opacity: 0; }
+}
+
+@keyframes flare-diagonal {
+  0% { transform: translate(-50%, -50%) rotate(45deg) scaleX(0); }
+  15% { transform: translate(-50%, -50%) rotate(45deg) scaleX(1.8); }
+  100% { transform: translate(-50%, -50%) rotate(45deg) scaleX(2.5); opacity: 0; }
+}
+
 .game-subtitle {
   font-family: var(--font-heading);
   font-style: italic;
   font-weight: 900;
-  color: var(--accent-color);
+  color: #FEFE00;
   font-size: 1.5rem;
   margin-bottom: 2rem;
   text-transform: uppercase;
@@ -208,10 +297,10 @@ button:focus-visible {
 }
 
 .menu-card {
-  background: var(--card-bg);
-  border: 4px solid #ffffff;
-  padding: 2.2rem;
-  box-shadow: 10px 10px 0px #000000;
+  background: none;
+  border: none;
+  padding: 0;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 1.8rem;
@@ -358,14 +447,84 @@ button:focus-visible {
 }
 
 .diff-btn.active[data-difficulty="expert"] {
-  background: var(--accent-color);
-  box-shadow: 4px 4px 0px var(--player-x-color);
+  background: #4700FE; /* Saturated Indigo/Blue */
+  box-shadow: 4px 4px 0px #FEFE00; /* Neon Yellow */
   color: #ffffff;
 }
 
 .diff-btn.active[data-difficulty="impossible"] {
-  background: #ffffff;
-  box-shadow: 4px 4px 0px var(--accent-color);
+  background: var(--accent-color); /* #FE004D */
+  box-shadow: 4px 4px 0px #ffffff;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   IMPOSSIBLE MODE THEME OVERRIDES
+   ========================================================================== */
+.impossible-mode {
+  --bg-color: #050508;
+}
+
+.impossible-mode .bg-glow-1 {
+  background: linear-gradient(90deg, transparent, #FE004D, transparent) !important;
+  opacity: 0.15 !important;
+  height: 250px !important;
+}
+
+.impossible-mode .bg-glow-2 {
+  background: linear-gradient(90deg, transparent, #FE004D, transparent) !important;
+  opacity: 0.12 !important;
+  height: 200px !important;
+}
+
+.impossible-mode .game-subtitle {
+  color: #FE004D !important;
+  text-shadow: 2px 2px 0px #000000 !important;
+}
+
+.impossible-mode .game-logo {
+  filter: drop-shadow(5px 5px 0px #FE004D) invert(0.05);
+}
+
+.impossible-mode .diff-btn:not(.active),
+.impossible-mode .mode-btn:not(.active) {
+  border-color: rgba(254, 0, 77, 0.3) !important;
+  color: rgba(254, 0, 77, 0.6) !important;
+}
+
+.impossible-mode .primary-btn {
+  background: #000000 !important;
+  border-color: #FE004D !important;
+  color: #FE004D !important;
+  box-shadow: 6px 6px 0px #FE004D !important;
+}
+
+.impossible-mode .primary-btn:hover {
+  background: #FE004D !important;
+  color: #000000 !important;
+  box-shadow: 8px 8px 0px #ffffff !important;
+}
+
+.impossible-mode .mini-board {
+  border-color: #FE004D !important;
+}
+
+.impossible-mode .cell {
+  background: rgba(26, 0, 5, 0.2) !important;
+  border-color: rgba(254, 0, 77, 0.15) !important;
+}
+
+.impossible-mode .mini-board.active-play {
+  border-color: #FE004D !important;
+  box-shadow: 0 0 15px rgba(254, 0, 77, 0.6) !important;
+}
+
+.impossible-mode.turn-x .mini-board.active-play .cell:not(.x):not(.o):hover {
+  background: rgba(254, 254, 0, 0.25) !important;
+}
+
+.impossible-mode.turn-o .mini-board.active-play .cell:not(.x):not(.o):hover {
+  background: rgba(71, 0, 254, 0.25) !important;
 }
 
 /* Button variants */
@@ -773,8 +932,8 @@ button:focus-visible {
   }
 }
 
-/* Dim other boards when there is an active target */
-.ultimate-board.has-active-target .mini-board:not(.active-play) {
+/* Dim other boards when there is an active target, except won boards */
+.ultimate-board.has-active-target .mini-board:not(.active-play):not(.won-x):not(.won-o):not(.won-tie) {
   opacity: 0.35;
 }
 
@@ -874,8 +1033,8 @@ button:focus-visible {
   position: absolute;
   width: 8%;
   height: 50%;
-  background-color: var(--player-x-color);
-  opacity: 0.3;
+  background-color: #ffffff;
+  opacity: 1;
 }
 .app-container.turn-x .mini-board.active-play .cell:not(.x):not(.o):hover::before { transform: rotate(45deg); }
 .app-container.turn-x .mini-board.active-play .cell:not(.x):not(.o):hover::after { transform: rotate(-45deg); }
@@ -885,10 +1044,19 @@ button:focus-visible {
   position: absolute;
   width: 38%;
   height: 38%;
-  border: 3.5px solid var(--player-o-color);
+  border: 3.5px solid #ffffff;
   border-radius: 50%;
-  opacity: 0.3;
+  opacity: 1;
 }
+
+.app-container.turn-x .mini-board.active-play .cell:not(.x):not(.o):hover {
+  background-color: rgba(254, 254, 0, 0.25);
+}
+
+.app-container.turn-o .mini-board.active-play .cell:not(.x):not(.o):hover {
+  background-color: rgba(71, 0, 254, 0.25);
+}
+
 
 /* ==========================================================================
    MINI-BOARD WIN OVERLAYS, SLAMMING EMBLUMS & SWORD SLASH
@@ -943,8 +1111,8 @@ button:focus-visible {
 
 /* X-board win styling */
 .mini-board.won-x .board-win-overlay {
-  background: rgba(254, 254, 0, 0.1);
-  border: 4px solid var(--player-x-color);
+  background: var(--player-x-color); /* Solid Neon Yellow */
+  border: 4px solid #000000;
 }
 
 .mini-board.won-x .win-symbol::before,
@@ -953,8 +1121,8 @@ button:focus-visible {
   position: absolute;
   width: 12px;
   height: 70px;
-  background-color: var(--player-x-color);
-  box-shadow: 4px 4px 0px #000000;
+  background-color: #000000; /* Solid Black symbol for high contrast on yellow */
+  box-shadow: 3px 3px 0px #ffffff; /* White offset flat shadow */
   top: calc(50% - 35px);
   left: calc(50% - 6px);
 }
@@ -964,14 +1132,14 @@ button:focus-visible {
 
 /* O-board win styling */
 .mini-board.won-o .board-win-overlay {
-  background: rgba(71, 0, 254, 0.1);
-  border: 4px solid var(--player-o-color);
+  background: var(--player-o-color); /* Solid Blue */
+  border: 4px solid #000000;
 }
 
 .mini-board.won-o .win-symbol {
   width: 50px;
   height: 50px;
-  border: 12px solid var(--player-o-color);
+  border: 12px solid #ffffff; /* Solid White symbol for high contrast on blue */
   border-radius: 50%;
   box-shadow: 4px 4px 0px #000000;
 }
@@ -1425,7 +1593,7 @@ button:focus-visible {
   }
   
   .menu-card {
-    padding: 1.5rem;
+    padding: 0;
     gap: 1.4rem;
   }
   

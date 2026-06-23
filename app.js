@@ -345,13 +345,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Play swing sound
     playSynthSound('logo-impact');
 
-    // Visual flash
-    const flashOverlay = document.getElementById('flash-overlay');
-    if (flashOverlay) {
-      flashOverlay.classList.remove('flash-fast', 'flash-red', 'flash-victory');
-      flashOverlay.style.backgroundColor = '#ffffff';
-      void flashOverlay.offsetWidth;
-      flashOverlay.classList.add('flash-fast');
+    // Delayed visual flash to match the slam landing (150ms)
+    setTimeout(() => {
+      const flashOverlay = document.getElementById('flash-overlay');
+      if (flashOverlay) {
+        flashOverlay.classList.remove('flash-fast', 'flash-red', 'flash-victory');
+        flashOverlay.style.backgroundColor = '#ffffff';
+        void flashOverlay.offsetWidth;
+        flashOverlay.classList.add('flash-fast');
+      }
+    }, 150);
+  }
+
+  function syncImpossibleMode() {
+    if (gameMode === 'PvNPC' && npcDifficulty === 'impossible') {
+      appContainer.classList.add('impossible-mode');
+    } else {
+      appContainer.classList.remove('impossible-mode');
     }
   }
 
@@ -366,6 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pvpBtn.classList.add('active');
     pveBtn.classList.remove('active');
     diffSelection.classList.add('hidden');
+    syncImpossibleMode();
   });
 
   pveBtn.addEventListener('click', () => {
@@ -376,6 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pveBtn.classList.add('active');
     pvpBtn.classList.remove('active');
     diffSelection.classList.remove('hidden');
+    syncImpossibleMode();
   });
 
   // Difficulty Toggle
@@ -387,6 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
       diffBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       npcDifficulty = btn.getAttribute('data-difficulty');
+      syncImpossibleMode();
     });
   });
 
@@ -1194,6 +1207,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    syncImpossibleMode();
+
     updateUI();
   }
 
@@ -1217,7 +1232,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (canvas) {
     const ctx = canvas.getContext('2d');
     let particles = [];
-    const maxParticles = 200; // 3x density for overcrowded pattern
+    const maxParticles = 300; // High density capacity for a thick field of particles
+    const initialParticlesCount = 100; // Starting count to prevent rendering spikes on load
 
     function resizeCanvas() {
       canvas.width = window.innerWidth;
@@ -1232,11 +1248,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Particle factory
-    function createParticle(initOpacity = 0.5) {
+    function createParticle(initOpacity = 0.08) {
       return {
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        size: 20 + Math.random() * 80, // slightly larger/chunkier sizes
+        size: 30 + Math.random() * 170, // Twice as large (up to 200px)
         type: Math.random() < 0.5 ? 'X' : 'O',
         opacity: initOpacity,
         fadeDelay: 60 + Math.random() * 120, // Frames to stay visible before fading
@@ -1249,31 +1265,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Populate initial particles
-    for (let i = 0; i < maxParticles; i++) {
-      particles.push(createParticle(Math.random() * 0.45));
+    for (let i = 0; i < initialParticlesCount; i++) {
+      particles.push(createParticle(Math.random() * 0.08));
     }
 
     function animateBackground() {
-      // Draw dynamic background gradient (from dark crimson to deep charcoal)
+      // Check if main menu is currently active to use Kidmon font and colors
+      const isMenu = mainMenuView && mainMenuView.classList.contains('active');
+      const isImpossible = appContainer && appContainer.classList.contains('impossible-mode');
+
+      // Draw dynamic background gradient (from dark crimson/blue to deep charcoal)
       const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      grad.addColorStop(0, '#28000b'); // Darkish #FE004D
-      grad.addColorStop(1, '#0f1015'); // Current dark gray
+      if (isImpossible) {
+        // Inverted: pitch black top, intense red/crimson bottom glow
+        grad.addColorStop(0, '#000000');
+        grad.addColorStop(1, '#3d000f');
+      } else if (isMenu) {
+        grad.addColorStop(0, '#28000b'); // Darkish #FE004D
+        grad.addColorStop(1, '#0f1015'); // Current dark gray
+      } else {
+        grad.addColorStop(0, '#00043a'); // Darkish #0018FE
+        grad.addColorStop(1, '#0f1015'); // Current dark gray
+      }
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Spawn new particles if we have space (faster spawn rate)
-      if (particles.length < maxParticles && Math.random() < 0.3) {
-        particles.push(createParticle(0.5));
+      if (particles.length < maxParticles && Math.random() < 0.45) {
+        particles.push(createParticle(0.08));
       }
-
-      // Check if main menu is currently active to use Kidmon font
-      const isMenu = mainMenuView && mainMenuView.classList.contains('active');
 
       // Draw and update particles
       particles.forEach((p) => {
-        // Drift according to current backgroundAngle
-        p.x += Math.cos(backgroundAngle) * p.driftSpeed;
-        p.y += Math.sin(backgroundAngle) * p.driftSpeed;
+        // Drift according to current backgroundAngle (doubled speed in impossible mode)
+        const speedMultiplier = isImpossible ? 2.2 : 1;
+        p.x += Math.cos(backgroundAngle) * p.driftSpeed * speedMultiplier;
+        p.y += Math.sin(backgroundAngle) * p.driftSpeed * speedMultiplier;
 
         // Apply birth shake decay
         let sx = 0, sy = 0;
@@ -1303,41 +1330,20 @@ document.addEventListener('DOMContentLoaded', () => {
           ctx.translate(p.x + sx, p.y + sy);
           ctx.rotate(p.rotation);
 
-          if (isMenu) {
-            // Draw using Kidmon Demo font in the main menu
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.font = `900 ${p.size}px 'Kidmon Demo', sans-serif`;
-            
-            if (p.type === 'X') {
-              ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
-              ctx.fillText('X', 0, 0);
-            } else {
-              ctx.fillStyle = `rgba(122, 125, 147, ${p.opacity})`;
-              ctx.fillText('O', 0, 0);
-            }
-          } else {
-            // Draw standard thick geometric shapes during active game view
-            ctx.lineWidth = p.size * 0.35; // A lot thicker!
-            ctx.lineCap = 'square';
-            ctx.lineJoin = 'miter';
+          // Draw using Kidmon Demo font in both menu and gameplay
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = `900 ${p.size}px 'Kidmon Demo', sans-serif`;
 
-            if (p.type === 'X') {
-              ctx.strokeStyle = `rgba(255, 255, 255, ${p.opacity})`;
-              ctx.beginPath();
-              const offset = p.size / 2;
-              ctx.moveTo(-offset, -offset);
-              ctx.lineTo(offset, offset);
-              ctx.moveTo(offset, -offset);
-              ctx.lineTo(-offset, offset);
-              ctx.stroke();
-            } else {
-              ctx.strokeStyle = `rgba(122, 125, 147, ${p.opacity})`;
-              ctx.beginPath();
-              ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
-              ctx.stroke();
-            }
+          if (isImpossible) {
+            // Highly prominent hot red particles
+            ctx.fillStyle = `rgba(254, 0, 77, ${Math.min(0.65, p.opacity * 2.2)})`;
+          } else if (isMenu) {
+            ctx.fillStyle = `rgba(254, 0, 77, ${p.opacity})`; // Hot Red (#FE004D)
+          } else {
+            ctx.fillStyle = `rgba(0, 24, 254, ${p.opacity})`; // Deep Blue (#0018FE)
           }
+          ctx.fillText(p.type, 0, 0);
           ctx.restore();
         }
       });
