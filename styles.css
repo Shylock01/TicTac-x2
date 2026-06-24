@@ -1983,8 +1983,10 @@ button:focus-visible {
   box-sizing: border-box;
 }
 
-.achievements-btn svg {
+.achievements-btn svg,
+.achievements-btn img {
   transform: skewX(8deg);
+  display: block;
 }
 
 .achievements-btn:hover {
