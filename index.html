@@ -15,10 +15,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800;900&family=Teko:wght@500;700;900&display=swap" rel="stylesheet">
   
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="styles.css?v=2.1.3">
+  <link rel="stylesheet" href="styles.css?v=2.1.4">
   
   <!-- Application JS -->
-  <script src="app.js?v=2.1.3" defer></script>
+  <script src="app.js?v=2.1.4" defer></script>
 </head>
 <body>
   <!-- Background Canvas -->
@@ -430,6 +430,38 @@
             <div id="achievements-list-container" class="achievements-list">
               <!-- Dynamically populated achievements will go here -->
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PVP PLAYER 2 SETUP MODAL -->
+    <div id="pvp-p2-modal" class="modal-overlay">
+      <div class="modal-card">
+        <header class="modal-header">
+          <h2>Player 2 Profile Selection</h2>
+          <button type="button" id="close-p2-modal-btn" class="close-btn" aria-label="Close selection">&times;</button>
+        </header>
+        <div class="modal-body scrollable">
+          <div class="control-group">
+            <label class="control-label">CREATE NEW P2 PROFILE (3 LETTERS)</label>
+            <div class="profile-input-row">
+              <input type="text" id="p2-name-input" maxlength="3" placeholder="P_O" class="profile-input" style="text-transform: uppercase;">
+              <button type="button" id="save-p2-profile-btn" class="primary-btn profile-save-btn" aria-label="Save P2 Profile">
+                <span>SAVE & SELECT</span>
+              </button>
+            </div>
+          </div>
+          
+          <div class="control-group" style="margin-top: 1.5rem;">
+            <label class="control-label">SELECT EXISTING PROFILE</label>
+            <div id="p2-buttons-list" class="profile-buttons-list"></div>
+          </div>
+          
+          <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+            <button type="button" id="start-pvp-battle-btn" class="primary-btn" style="flex: 1;">
+              <span>START BATTLE</span>
+            </button>
           </div>
         </div>
       </div>

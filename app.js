@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Profiles & Achievements State
   let activeProfileName = null;
+  let p2ProfileName = null;
   let xBlocksCount = 0;
   let opponentHadTwoInARow = false;
 
@@ -94,6 +95,14 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const achievementNotification = document.getElementById('achievement-notification');
   const toastAchievementName = document.getElementById('toast-achievement-name');
+
+  // PvP Player 2 DOM References
+  const pvpP2Modal = document.getElementById('pvp-p2-modal');
+  const closeP2ModalBtn = document.getElementById('close-p2-modal-btn');
+  const p2NameInput = document.getElementById('p2-name-input');
+  const saveP2ProfileBtn = document.getElementById('save-p2-profile-btn');
+  const p2ButtonsList = document.getElementById('p2-buttons-list');
+  const startPvpBattleBtn = document.getElementById('start-pvp-battle-btn');
 
   // Cells
   const cells = document.querySelectorAll('.cell');
@@ -375,11 +384,18 @@ document.addEventListener('DOMContentLoaded', () => {
     playSynthSound('click');
     triggerHaptic('tap');
     
-    // Hide menu, show game board
-    mainMenuView.classList.remove('active');
-    gameView.classList.add('active');
-    
-    startGame();
+    if (gameMode === 'PvP') {
+      p2NameInput.value = '';
+      p2ProfileName = null;
+      updateP2ButtonsList();
+      pvpP2Modal.classList.add('active');
+    } else {
+      p2ProfileName = null;
+      // Hide menu, show game board
+      mainMenuView.classList.remove('active');
+      gameView.classList.add('active');
+      startGame();
+    }
   });
 
   // Continue Button Click
@@ -756,7 +772,26 @@ document.addEventListener('DOMContentLoaded', () => {
     appContainer.classList.remove('turn-x', 'turn-o');
     appContainer.classList.add(`turn-${currentPlayer.toLowerCase()}`);
 
-    // Update Player active panels
+    // Update Player active panels and scoreboard names
+    const nameXEl = panelX.querySelector('.player-name');
+    const nameOEl = panelO.querySelector('.player-name');
+    
+    if (activeProfileName) {
+      nameXEl.textContent = activeProfileName;
+    } else {
+      nameXEl.textContent = 'Player X';
+    }
+
+    if (gameMode === 'PvNPC') {
+      nameOEl.textContent = 'NPC';
+    } else {
+      if (p2ProfileName) {
+        nameOEl.textContent = p2ProfileName;
+      } else {
+        nameOEl.textContent = 'Player O';
+      }
+    }
+
     if (currentPlayer === 'X') {
       panelX.classList.add('active');
       panelO.classList.remove('active');
@@ -786,13 +821,31 @@ document.addEventListener('DOMContentLoaded', () => {
       if (winner === 'tie') {
         statusText.innerHTML = `<span class="status-badge tie-badge">DRAW GAME</span>`;
       } else {
-        statusText.innerHTML = `<span class="status-badge winner-badge winner-${winner.toLowerCase()}">VICTORY: ${winner}</span>`;
+        let winDisplayName = winner;
+        if (winner === 'X' && activeProfileName) {
+          winDisplayName = activeProfileName;
+        } else if (winner === 'O') {
+          if (gameMode === 'PvNPC') {
+            winDisplayName = 'NPC';
+          } else if (p2ProfileName) {
+            winDisplayName = p2ProfileName;
+          }
+        }
+        statusText.innerHTML = `<span class="status-badge winner-badge winner-${winner.toLowerCase()}">VICTORY: ${winDisplayName}</span>`;
       }
       return;
     }
 
-    const isNpcActive = (gameMode === 'PvNPC' && currentPlayer === 'O');
-    const playerString = isNpcActive ? 'NPC' : currentPlayer;
+    let playerString = currentPlayer;
+    if (currentPlayer === 'X') {
+      playerString = activeProfileName ? activeProfileName : 'X';
+    } else {
+      if (gameMode === 'PvNPC') {
+        playerString = 'NPC';
+      } else {
+        playerString = p2ProfileName ? p2ProfileName : 'O';
+      }
+    }
     const boardNames = ['TOP-LEFT', 'TOP-CENTER', 'TOP-RIGHT', 'MIDDLE-LEFT', 'CENTER', 'MIDDLE-RIGHT', 'BOTTOM-LEFT', 'BOTTOM-CENTER', 'BOTTOM-RIGHT'];
 
     if (activeBoardIndex === -1) {
@@ -873,7 +926,13 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (isPlayerWinner) {
         winnerTitle.textContent = "Victory!";
-        winnerSubtitle.textContent = `Congratulations! Player ${gameWinner} conquered the grid.`;
+        let winDisplayName = gameWinner;
+        if (gameWinner === 'X' && activeProfileName) {
+          winDisplayName = activeProfileName;
+        } else if (gameWinner === 'O' && p2ProfileName) {
+          winDisplayName = p2ProfileName;
+        }
+        winnerSubtitle.textContent = `Congratulations! Player ${winDisplayName} conquered the grid.`;
       } else {
         const lossPhrases = ["Ouch!", "Maybe Next Time...", "OOF", "Noob Alert!", "Yikes!"];
         const randomPhrase = lossPhrases[Math.floor(Math.random() * lossPhrases.length)];
@@ -896,15 +955,39 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = getProfileData(activeProfileName);
 
       if (gameMode === 'PvP') {
-        if (gameWinner === 'X' || gameWinner === 'O') {
+        if (gameWinner === 'X') {
           data.pvpWins = (data.pvpWins || 0) + 1;
           data.wins++;
           saveProfileData(activeProfileName, data);
-          unlockAchievement('win_pvp');
+          unlockAchievement('win_pvp', activeProfileName);
+
+          if (p2ProfileName && p2ProfileName !== 'P2') {
+            const p2Data = getProfileData(p2ProfileName);
+            p2Data.losses++;
+            saveProfileData(p2ProfileName, p2Data);
+          }
+        } else if (gameWinner === 'O') {
+          data.losses++;
+          saveProfileData(activeProfileName, data);
+
+          if (p2ProfileName && p2ProfileName !== 'P2') {
+            const p2Data = getProfileData(p2ProfileName);
+            p2Data.pvpWins = (p2Data.pvpWins || 0) + 1;
+            p2Data.wins++;
+            saveProfileData(p2ProfileName, p2Data);
+            unlockAchievement('win_pvp', p2ProfileName);
+          }
         } else if (gameWinner === 'tie') {
           data.ties++;
           saveProfileData(activeProfileName, data);
-          unlockAchievement('grid_lock');
+          unlockAchievement('grid_lock', activeProfileName);
+
+          if (p2ProfileName && p2ProfileName !== 'P2') {
+            const p2Data = getProfileData(p2ProfileName);
+            p2Data.ties++;
+            saveProfileData(p2ProfileName, p2Data);
+            unlockAchievement('grid_lock', p2ProfileName);
+          }
         }
       } else if (gameMode === 'PvNPC') {
         if (gameWinner === 'X') {
@@ -1739,24 +1822,33 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('tictacx2_profiles', JSON.stringify(profiles));
   }
 
-  function unlockAchievement(id) {
-    if (!activeProfileName) return;
-    const data = getProfileData(activeProfileName);
+  function unlockAchievement(id, profileName = activeProfileName) {
+    if (!profileName) return;
+    const data = getProfileData(profileName);
     if (data.achievements.includes(id)) return; // Already unlocked
 
     data.achievements.push(id);
-    saveProfileData(activeProfileName, data);
+    saveProfileData(profileName, data);
 
     // Trigger visual toast
     const ach = ACHIEVEMENTS_DEF.find(a => a.id === id);
     if (ach) {
-      showAchievementToast(ach.name);
+      showAchievementToast(ach.name, profileName);
     }
   }
 
   let toastTimeout = null;
-  function showAchievementToast(name) {
+  function showAchievementToast(name, profileName) {
     toastAchievementName.textContent = name;
+    
+    // Customize toast title if it's for another player
+    const toastTitleEl = achievementNotification.querySelector('.toast-title');
+    if (profileName && profileName !== activeProfileName) {
+      toastTitleEl.textContent = `${profileName} UNLOCKED!`;
+    } else {
+      toastTitleEl.textContent = `ACHIEVEMENT UNLOCKED!`;
+    }
+
     achievementNotification.classList.add('show');
     playAudioFile('audio/Button_2.mp3');
 
@@ -1835,6 +1927,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function updateP2ButtonsList() {
+    p2ButtonsList.innerHTML = '';
+    const profiles = getProfiles();
+    const names = Object.keys(profiles).sort();
+    
+    // Exclude Player 1's profile name so they can't be the same!
+    const filteredNames = names.filter(n => n !== activeProfileName);
+    
+    filteredNames.forEach(name => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'profile-select-btn';
+      if (name === p2ProfileName) {
+        btn.classList.add('active');
+      }
+      btn.innerHTML = `<span>${name}</span>`;
+      btn.addEventListener('click', () => {
+        p2ProfileName = name;
+        p2NameInput.value = name;
+        playSynthSound('click');
+        updateP2ButtonsList();
+      });
+      p2ButtonsList.appendChild(btn);
+    });
+  }
+
   function initProfile() {
     activeProfileName = localStorage.getItem('tictacx2_active_profile');
     if (activeProfileName) {
@@ -1876,6 +1994,76 @@ document.addEventListener('DOMContentLoaded', () => {
         playSynthSound('click');
         achievementsModal.classList.remove('active');
       }
+    });
+
+    // PvP Player 2 Event Listeners
+    closeP2ModalBtn.addEventListener('click', () => {
+      playSynthSound('click');
+      pvpP2Modal.classList.remove('active');
+    });
+
+    pvpP2Modal.addEventListener('click', (e) => {
+      if (e.target === pvpP2Modal) {
+        playSynthSound('click');
+        pvpP2Modal.classList.remove('active');
+      }
+    });
+
+    saveP2ProfileBtn.addEventListener('click', () => {
+      const name = p2NameInput.value.trim().toUpperCase();
+      if (/^[A-Z]{3}$/.test(name)) {
+        if (name === activeProfileName) {
+          playSynthSound('error');
+          p2NameInput.classList.add('shake');
+          setTimeout(() => p2NameInput.classList.remove('shake'), 400);
+          return;
+        }
+        p2ProfileName = name;
+        
+        const data = getProfileData(p2ProfileName);
+        saveProfileData(p2ProfileName, data);
+
+        playSynthSound('click');
+        updateP2ButtonsList();
+      } else {
+        playSynthSound('error');
+        p2NameInput.classList.add('shake');
+        setTimeout(() => p2NameInput.classList.remove('shake'), 400);
+      }
+    });
+
+    startPvpBattleBtn.addEventListener('click', () => {
+      const typed = p2NameInput.value.trim().toUpperCase();
+      
+      if (typed !== '' && typed !== p2ProfileName) {
+        if (/^[A-Z]{3}$/.test(typed)) {
+          if (typed === activeProfileName) {
+            playSynthSound('error');
+            p2NameInput.classList.add('shake');
+            setTimeout(() => p2NameInput.classList.remove('shake'), 400);
+            return;
+          }
+          p2ProfileName = typed;
+          const data = getProfileData(p2ProfileName);
+          saveProfileData(p2ProfileName, data);
+        } else {
+          playSynthSound('error');
+          p2NameInput.classList.add('shake');
+          setTimeout(() => p2NameInput.classList.remove('shake'), 400);
+          return;
+        }
+      }
+      
+      if (!p2ProfileName) {
+        p2ProfileName = 'P2';
+      }
+
+      playSynthSound('click');
+      pvpP2Modal.classList.remove('active');
+      mainMenuView.classList.remove('active');
+      gameView.classList.add('active');
+      
+      startGame();
     });
   }
 
